@@ -3,10 +3,8 @@ module Werkzeug
 
 """
     @unroll1 for-loop
-
 Unroll the first iteration of a `for`-loop.
 Set `$first` to true in the first iteration.
-
 Example:
 ```
     @unroll1 for i in 1:10
@@ -27,17 +25,23 @@ macro unroll1(expr)
     @assert iterspec isa Expr
     @assert  iterspec.head == :(=)
 
-    i = esc(iterspec.args[1])
+    i_ = iterspec.args[1]
+    i = esc(i_)
     iter = esc(iterspec.args[2])
     body = esc(expr.args[2])
-
 
     body_1 = eval(Expr(:let, :(first = true), Expr(:quote, body)))
     body_i = eval(Expr(:let, :(first = false), Expr(:quote, body)))
 
+    if i_ isa Expr && i_.head == :tuple
+        decl = esc(quote local $(i_.args...) end)
+    else
+        decl = quote local $i end
+    end
+    
     quote
         local st
-        local $i
+        $decl
         @goto enter
         while true
             @goto exit
